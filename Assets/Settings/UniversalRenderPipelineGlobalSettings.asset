@@ -29,6 +29,7 @@ MonoBehaviour:
   m_StripUnusedVariants: 1
   m_StripScreenCoordOverrideVariants: 1
   supportRuntimeDebugDisplay: 0
+  m_EnableRenderGraph: 0
   m_Settings:
     m_SettingsList:
       m_List:
@@ -99,6 +100,8 @@ MonoBehaviour:
   references:
     version: 2
     RefIds:
+    - rid: -2
+      type: {class: , ns: , asm: }
     - rid: 4148027883084054594
       type: {class: RayTracingRenderPipelineResources, ns: UnityEngine.Rendering.UnifiedRayTracing, asm: Unity.UnifiedRayTracing.Runtime}
       data:
@@ -349,6 +352,7 @@ MonoBehaviour:
       type: {class: RenderGraphSettings, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
         m_Version: 0
+        m_EnableRenderCompatibilityMode: 0
     - rid: 7390529454592753865
       type: {class: UniversalRenderPipelineEditorShaders, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
