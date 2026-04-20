@@ -73344,7 +73344,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &1469200187
 Transform:
   m_ObjectHideFlags: 0
@@ -76273,7 +76273,7 @@ Transform:
   m_GameObject: {fileID: 1517071965}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.14335072, z: -0, w: 0.98967195}
-  m_LocalPosition: {x: 87.49176, y: 57.40061, z: 84.129715}
+  m_LocalPosition: {x: 55.8, y: 57.40061, z: 79.9}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -87786,9 +87786,9 @@ WindZone:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1768551364}
-  m_Enabled: 1
-  m_Mode: 0
-  m_Radius: 20
+  m_Enabled: 0
+  m_Mode: 1
+  m_Radius: 10
   m_WindMain: 1
   m_WindTurbulence: 1
   m_WindPulseMagnitude: 0.5
@@ -93531,7 +93531,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!143 &1898629005
 CharacterController:
   m_ObjectHideFlags: 0
