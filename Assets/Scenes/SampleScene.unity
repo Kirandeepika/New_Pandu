@@ -74771,7 +74771,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1469200187
 Transform:
   m_ObjectHideFlags: 0
@@ -88339,7 +88339,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c1d67e824a4e56d4d809afe117e687e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ThirdPersonCamera
-  target: {fileID: 0}
+  target: {fileID: 1898629010}
   distance: 5
   height: 2
   mouseSensitivity: 3
@@ -96282,7 +96282,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!143 &1898629005
 CharacterController:
   m_ObjectHideFlags: 0
@@ -96320,13 +96320,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 760206caf41564d46b94749635aaaa82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  controller: {fileID: 0}
+  controller: {fileID: 1898629005}
   speed: 5
   sprintSpeed: 8
   rotationSpeed: 10
   jumpHeight: 1.5
   gravity: -9.81
-  cameraTransform: {fileID: 0}
+  cameraTransform: {fileID: 1742358292}
 --- !u!136 &1898629007
 CapsuleCollider:
   m_ObjectHideFlags: 0
