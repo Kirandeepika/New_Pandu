@@ -139,7 +139,7 @@ Material:
     - _DstBlendAlpha: 0
     - _EmissionScaleUI: 0
     - _EnvironmentReflections: 1
-    - _Glossiness: 0.5
+    - _Glossiness: 0.133
     - _HueVariationKwToggle: 0
     - _LeafTurbulence: 0.5
     - _Metallic: 0
