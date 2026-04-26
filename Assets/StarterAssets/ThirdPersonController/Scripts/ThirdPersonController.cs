@@ -128,10 +128,22 @@ namespace StarterAssets
 
         private void Awake()
         {
-            // get a reference to our main camera
+            // Try to find by tag
             if (_mainCamera == null)
             {
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            }
+
+            // If still null, try to find the active camera in the scene
+            if (_mainCamera == null)
+            {
+                _mainCamera = Camera.main?.gameObject;
+            }
+
+            // Critical check
+            if (_mainCamera == null)
+            {
+                Debug.LogError("ThirdPersonController: No GameObject with 'MainCamera' tag found! Movement will fail.");
             }
         }
 
