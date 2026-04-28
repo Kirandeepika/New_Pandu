@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -24,18 +25,26 @@ namespace StarterAssets
         public CharacterController PlayerCharacterController;
 
         [Header("Camera")]
-        [Tooltip("Drag your ThirdPersonCamera GameObject here")]
         public ThirdPersonCamera CameraController;
-
-        [Tooltip("The camera will follow this point on the car (create an empty child GameObject on your car roof/center)")]
         public Transform VehicleCameraTarget;
 
+        [Header("Mobile UI")]
+        [Tooltip("Drag your player HUD/joystick Canvas here — it will hide while driving")]
+        public GameObject PlayerControllerCanvas;
+
+        // ── Public mobile input — set by MobileVehicleUI every frame ─────
+        // MobileVehicleUI writes directly to these instead of using Reflection
+        [HideInInspector] public float MobileDriveInput = 0f;
+        [HideInInspector] public float MobileTurnInput = 0f;
+        [HideInInspector] public bool UseMobileInput = false;
+
+        // ── Private state ─────────────────────────────────────────────────
         private float _currentSpeed = 0f;
         private float _turnInput = 0f;
         private float _driveInput = 0f;
         private bool _isDriving = false;
         private Transform _playerTransform;
-        private Transform _originalCameraTarget; // stores player target to restore on exit
+        private Transform _originalCameraTarget;
 
 #if ENABLE_INPUT_SYSTEM
         private Keyboard _kb;
@@ -49,7 +58,6 @@ namespace StarterAssets
             if (PlayerController != null)
                 _playerTransform = PlayerController.transform;
 
-            // Store the original camera target (the player)
             if (CameraController != null)
                 _originalCameraTarget = CameraController.target;
         }
@@ -58,7 +66,7 @@ namespace StarterAssets
         {
 #if ENABLE_INPUT_SYSTEM
             _kb = Keyboard.current;
-            if (_kb == null) return;
+            if (_kb == null && !UseMobileInput) return;
 #endif
             if (_isDriving)
                 HandleDriving();
@@ -66,6 +74,7 @@ namespace StarterAssets
                 CheckForEntry();
         }
 
+        // ── Entry ─────────────────────────────────────────────────────────
         private void CheckForEntry()
         {
             if (_playerTransform == null) return;
@@ -73,7 +82,7 @@ namespace StarterAssets
             if (dist > EntryRadius) return;
 
 #if ENABLE_INPUT_SYSTEM
-            if (_kb.eKey.wasPressedThisFrame)
+            if (_kb != null && _kb.eKey.wasPressedThisFrame)
 #else
             if (Input.GetKeyDown(KeyCode.E))
 #endif
@@ -82,7 +91,7 @@ namespace StarterAssets
             }
         }
 
-        private void EnterVehicle()
+        public void EnterVehicle()
         {
             _isDriving = true;
 
@@ -90,26 +99,27 @@ namespace StarterAssets
             if (PlayerController != null) PlayerController.enabled = false;
             if (PlayerCharacterController != null) PlayerCharacterController.enabled = false;
 
+            // ── Hide player HUD/joystick canvas ──
+            if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(false);
+
             if (_playerTransform != null)
             {
                 _playerTransform.SetParent(transform);
                 _playerTransform.localPosition = Vector3.zero;
             }
 
-            // ── Switch camera target to the vehicle ──
             if (CameraController != null)
-            {
-                // Use dedicated VehicleCameraTarget if assigned, otherwise follow car root
-                CameraController.target = VehicleCameraTarget != null
-                    ? VehicleCameraTarget
-                    : transform;
-            }
+                CameraController.target = VehicleCameraTarget != null ? VehicleCameraTarget : transform;
         }
 
-        private void ExitVehicle()
+        // ── Exit ──────────────────────────────────────────────────────────
+        public void ExitVehicle()
         {
             _isDriving = false;
             _currentSpeed = 0f;
+            UseMobileInput = false;
+            MobileDriveInput = 0f;
+            MobileTurnInput = 0f;
 
             if (_playerTransform != null)
             {
@@ -136,17 +146,21 @@ namespace StarterAssets
             if (PlayerModel != null) PlayerModel.SetActive(true);
             if (PlayerController != null) PlayerController.enabled = true;
 
-            // ── Restore camera target back to the player ──
+            // ── Show player HUD/joystick canvas again ──
+            if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(true);
+
             if (CameraController != null && _originalCameraTarget != null)
                 CameraController.target = _originalCameraTarget;
         }
 
+        // ── Driving ───────────────────────────────────────────────────────
         private void HandleDriving()
         {
             ReadInput();
 
+            // Keyboard exit (PC fallback)
 #if ENABLE_INPUT_SYSTEM
-            if (_kb.eKey.wasPressedThisFrame)
+            if (_kb != null && _kb.eKey.wasPressedThisFrame)
 #else
             if (Input.GetKeyDown(KeyCode.E))
 #endif
@@ -184,17 +198,27 @@ namespace StarterAssets
 
         private void ReadInput()
         {
+            if (UseMobileInput)
+            {
+                // ── Mobile: read public fields written by MobileVehicleUI ──
+                _driveInput = MobileDriveInput;
+                _turnInput = MobileTurnInput;
+            }
+            else
+            {
 #if ENABLE_INPUT_SYSTEM
-            _driveInput = 0f;
-            _turnInput = 0f;
-            if (_kb.wKey.isPressed || _kb.upArrowKey.isPressed) _driveInput = 1f;
-            if (_kb.sKey.isPressed || _kb.downArrowKey.isPressed) _driveInput = -1f;
-            if (_kb.aKey.isPressed || _kb.leftArrowKey.isPressed) _turnInput = -1f;
-            if (_kb.dKey.isPressed || _kb.rightArrowKey.isPressed) _turnInput = 1f;
+                _driveInput = 0f;
+                _turnInput = 0f;
+                if (_kb == null) return;
+                if (_kb.wKey.isPressed || _kb.upArrowKey.isPressed) _driveInput = 1f;
+                if (_kb.sKey.isPressed || _kb.downArrowKey.isPressed) _driveInput = -1f;
+                if (_kb.aKey.isPressed || _kb.leftArrowKey.isPressed) _turnInput = -1f;
+                if (_kb.dKey.isPressed || _kb.rightArrowKey.isPressed) _turnInput = 1f;
 #else
-            _driveInput = Input.GetAxis("Vertical");
-            _turnInput  = Input.GetAxis("Horizontal");
+                _driveInput = Input.GetAxis("Vertical");
+                _turnInput  = Input.GetAxis("Horizontal");
 #endif
+            }
         }
 
         private void OnDrawGizmosSelected()

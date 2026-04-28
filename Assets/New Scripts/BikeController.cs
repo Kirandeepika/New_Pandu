@@ -67,6 +67,15 @@ namespace StarterAssets
         [Tooltip("Empty child GameObject on the bike at seat height for camera to follow")]
         public Transform VehicleCameraTarget;
 
+        [Header("Mobile UI")]
+        [Tooltip("Drag your player HUD/joystick Canvas here — it will hide while riding")]
+        public GameObject PlayerControllerCanvas;
+
+        // ── Public mobile input — set by MobileVehicleUI every frame ─────
+        [HideInInspector] public float MobileDriveInput = 0f;
+        [HideInInspector] public float MobileTurnInput = 0f;
+        [HideInInspector] public bool UseMobileInput = false;
+
         // ── Private state ─────────────────────────────────────────────────
         private float _currentSpeed = 0f;
         private float _turnInput = 0f;
@@ -94,14 +103,11 @@ namespace StarterAssets
                 _playerTransform = PlayerController.transform;
 
             if (BikeRoot == null)
-                Debug.LogError("BikeController: BikeRoot is not assigned! " +
-                               "See the setup instructions in the script header.");
+                Debug.LogError("BikeController: BikeRoot is not assigned!");
 
-            // Make sure RiderModel starts hidden (safety net in case it wasn't disabled in Inspector)
             if (RiderModel != null)
                 RiderModel.SetActive(false);
 
-            // Store original camera target (the player) to restore on exit
             if (CameraController != null)
                 _originalCameraTarget = CameraController.target;
         }
@@ -111,7 +117,7 @@ namespace StarterAssets
         {
 #if ENABLE_INPUT_SYSTEM
             _kb = Keyboard.current;
-            if (_kb == null) return;
+            if (_kb == null && !UseMobileInput) return;
 #endif
             if (_isRiding)
                 HandleRiding();
@@ -128,7 +134,7 @@ namespace StarterAssets
             if (dist > EntryRadius) return;
 
 #if ENABLE_INPUT_SYSTEM
-            if (_kb.eKey.wasPressedThisFrame)
+            if (_kb != null && _kb.eKey.wasPressedThisFrame)
 #else
             if (Input.GetKeyDown(KeyCode.E))
 #endif
@@ -137,16 +143,18 @@ namespace StarterAssets
             }
         }
 
-        private void EnterVehicle()
+        public void EnterVehicle()
         {
             _isRiding = true;
 
-            // Hide the walking player, show the seated rider model
             if (PlayerModel != null) PlayerModel.SetActive(false);
             if (RiderModel != null) RiderModel.SetActive(true);
 
             if (PlayerController != null) PlayerController.enabled = false;
             if (PlayerCharacterController != null) PlayerCharacterController.enabled = false;
+
+            // Hide player HUD/joystick canvas
+            if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(false);
 
             if (_playerTransform != null)
             {
@@ -154,7 +162,6 @@ namespace StarterAssets
                 _playerTransform.localPosition = Vector3.zero;
             }
 
-            // Switch camera target to the bike
             if (CameraController != null)
             {
                 CameraController.target = VehicleCameraTarget != null
@@ -164,10 +171,13 @@ namespace StarterAssets
         }
 
         // ── Exit ──────────────────────────────────────────────────────────
-        private void ExitVehicle()
+        public void ExitVehicle()
         {
             _isRiding = false;
             _currentSpeed = 0f;
+            UseMobileInput = false;
+            MobileDriveInput = 0f;
+            MobileTurnInput = 0f;
 
             // Reset lean to upright instantly on exit
             _currentLeanAngle = 0f;
@@ -199,13 +209,14 @@ namespace StarterAssets
                 _playerTransform.rotation = transform.rotation;
             }
 
-            // Hide the seated rider model, show the walking player
             if (RiderModel != null) RiderModel.SetActive(false);
             if (PlayerModel != null) PlayerModel.SetActive(true);
 
             if (PlayerController != null) PlayerController.enabled = true;
 
-            // Restore camera target back to the player
+            // Show player HUD/joystick canvas again
+            if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(true);
+
             if (CameraController != null && _originalCameraTarget != null)
                 CameraController.target = _originalCameraTarget;
         }
@@ -216,7 +227,7 @@ namespace StarterAssets
             ReadInput();
 
 #if ENABLE_INPUT_SYSTEM
-            if (_kb.eKey.wasPressedThisFrame)
+            if (_kb != null && _kb.eKey.wasPressedThisFrame)
 #else
             if (Input.GetKeyDown(KeyCode.E))
 #endif
@@ -231,27 +242,15 @@ namespace StarterAssets
             bool pressingBackward = _driveInput < 0f;
 
             if ((movingForward && pressingBackward) || (movingBackward && pressingForward))
-            {
-                _currentSpeed = Mathf.MoveTowards(_currentSpeed, 0f,
-                    BrakeForce * Time.deltaTime);
-            }
+                _currentSpeed = Mathf.MoveTowards(_currentSpeed, 0f, BrakeForce * Time.deltaTime);
             else if (pressingForward)
-            {
-                _currentSpeed = Mathf.MoveTowards(_currentSpeed, MaxSpeed,
-                    Acceleration * Time.deltaTime);
-            }
+                _currentSpeed = Mathf.MoveTowards(_currentSpeed, MaxSpeed, Acceleration * Time.deltaTime);
             else if (pressingBackward)
-            {
-                _currentSpeed = Mathf.MoveTowards(_currentSpeed, -MaxReverseSpeed,
-                    Acceleration * Time.deltaTime);
-            }
+                _currentSpeed = Mathf.MoveTowards(_currentSpeed, -MaxReverseSpeed, Acceleration * Time.deltaTime);
             else
-            {
-                _currentSpeed = Mathf.MoveTowards(_currentSpeed, 0f,
-                    CoastDeceleration * Time.deltaTime);
-            }
+                _currentSpeed = Mathf.MoveTowards(_currentSpeed, 0f, CoastDeceleration * Time.deltaTime);
 
-            // ── Turning ────────────────────────────────────────────────────
+            // Turning
             if (Mathf.Abs(_currentSpeed) > 0.2f)
             {
                 float direction = _currentSpeed > 0f ? 1f : -1f;
@@ -259,10 +258,10 @@ namespace StarterAssets
                 transform.Rotate(0f, turnAmount, 0f);
             }
 
-            // ── Move forward ───────────────────────────────────────────────
+            // Move
             transform.position += transform.forward * (_currentSpeed * Time.deltaTime);
 
-            // ── Lean ───────────────────────────────────────────────────────
+            // Lean
             ApplyLean();
         }
 
@@ -274,29 +273,37 @@ namespace StarterAssets
             float targetLean = -_turnInput * MaxLeanAngle * speedFactor;
 
             _currentLeanAngle = Mathf.SmoothDamp(
-                _currentLeanAngle,
-                targetLean,
-                ref _leanVelocity,
-                LeanSmoothTime);
+                _currentLeanAngle, targetLean,
+                ref _leanVelocity, LeanSmoothTime);
 
             Vector3 euler = BikeRoot.localEulerAngles;
             BikeRoot.localEulerAngles = new Vector3(euler.x, euler.y, _currentLeanAngle);
         }
 
+        // ── Input ─────────────────────────────────────────────────────────
         private void ReadInput()
         {
+            if (UseMobileInput)
+            {
+                // Mobile: read public fields written by MobileVehicleUI every frame
+                _driveInput = MobileDriveInput;
+                _turnInput = MobileTurnInput;
+            }
+            else
+            {
 #if ENABLE_INPUT_SYSTEM
-            _driveInput = 0f;
-            _turnInput = 0f;
-
-            if (_kb.wKey.isPressed || _kb.upArrowKey.isPressed) _driveInput = 1f;
-            if (_kb.sKey.isPressed || _kb.downArrowKey.isPressed) _driveInput = -1f;
-            if (_kb.aKey.isPressed || _kb.leftArrowKey.isPressed) _turnInput = -1f;
-            if (_kb.dKey.isPressed || _kb.rightArrowKey.isPressed) _turnInput = 1f;
+                _driveInput = 0f;
+                _turnInput = 0f;
+                if (_kb == null) return;
+                if (_kb.wKey.isPressed || _kb.upArrowKey.isPressed) _driveInput = 1f;
+                if (_kb.sKey.isPressed || _kb.downArrowKey.isPressed) _driveInput = -1f;
+                if (_kb.aKey.isPressed || _kb.leftArrowKey.isPressed) _turnInput = -1f;
+                if (_kb.dKey.isPressed || _kb.rightArrowKey.isPressed) _turnInput = 1f;
 #else
-            _driveInput = Input.GetAxis("Vertical");
-            _turnInput  = Input.GetAxis("Horizontal");
+                _driveInput = Input.GetAxis("Vertical");
+                _turnInput  = Input.GetAxis("Horizontal");
 #endif
+            }
         }
 
         // ── Gizmo ─────────────────────────────────────────────────────────
