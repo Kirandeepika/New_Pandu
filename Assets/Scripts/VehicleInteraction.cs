@@ -9,8 +9,11 @@ public class VehicleInteraction : MonoBehaviour
     public Transform exitPoint;
 
     [Header("Rider Settings")]
-    [Tooltip("Drag the character model that stays on the bike/auto here")]
     public GameObject dummyRider;
+
+    [Header("Audio Settings")]
+    [Tooltip("Drag the AudioSource component from this vehicle here")]
+    public AudioSource vehicleEngineAudio;
 
     private Transform originalPlayerTarget;
     private ThirdPersonCamera mainCamScript;
@@ -21,8 +24,10 @@ public class VehicleInteraction : MonoBehaviour
     {
         if (vehicleController != null) vehicleController.enabled = false;
 
-        // Ensure the dummy rider is hidden at the start
         if (dummyRider != null) dummyRider.SetActive(false);
+
+        // Ensure engine is off at the start
+        if (vehicleEngineAudio != null) vehicleEngineAudio.Stop();
 
         mainCamScript = Camera.main.GetComponent<ThirdPersonCamera>();
         if (mainCamScript != null) originalPlayerTarget = mainCamScript.target;
@@ -34,8 +39,10 @@ public class VehicleInteraction : MonoBehaviour
         mainPlayer.SetActive(false);
         vehicleController.enabled = true;
 
-        // Show the dummy rider sitting in the vehicle
         if (dummyRider != null) dummyRider.SetActive(true);
+
+        // Start the engine sound
+        if (vehicleEngineAudio != null) vehicleEngineAudio.Play();
 
         if (mainCamScript != null)
         {
@@ -50,8 +57,10 @@ public class VehicleInteraction : MonoBehaviour
         mainPlayer.SetActive(true);
         vehicleController.enabled = false;
 
-        // Hide the dummy rider when you get out
         if (dummyRider != null) dummyRider.SetActive(false);
+
+        // Stop the engine sound
+        if (vehicleEngineAudio != null) vehicleEngineAudio.Stop();
 
         if (mainCamScript != null)
         {
