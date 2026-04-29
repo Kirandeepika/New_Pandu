@@ -22114,6 +22114,10 @@ PrefabInstance:
       propertyPath: StopButton
       value: 
       objectReference: {fileID: 1939486124}
+    - target: {fileID: 7319248191846836896, guid: a024762eba0039b4bb1653ca713f07dc, type: 3}
+      propertyPath: followDuration
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 8740021593931022603, guid: a024762eba0039b4bb1653ca713f07dc, type: 3}
       propertyPath: Loop
       value: 1
@@ -47107,6 +47111,10 @@ PrefabInstance:
       propertyPath: audioSource
       value: 
       objectReference: {fileID: 1576008043}
+    - target: {fileID: 2920241923833561921, guid: 80db4321f502d4d4999a030cb9369d25, type: 3}
+      propertyPath: followDuration
+      value: 15
+      objectReference: {fileID: 0}
     - target: {fileID: 8238219491587941999, guid: 80db4321f502d4d4999a030cb9369d25, type: 3}
       propertyPath: m_Size.x
       value: 0.45725828
