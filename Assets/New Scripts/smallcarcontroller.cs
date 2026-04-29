@@ -64,6 +64,7 @@ namespace StarterAssets
         private float _driveInput = 0f;
         private bool _isDriving = false;
 
+        public AudioSource AudioSource;
         private Transform _playerTransform;
         private Transform _originalCameraTarget;
 
@@ -142,6 +143,11 @@ namespace StarterAssets
                     ? VehicleCameraTarget
                     : transform;
             }
+
+            if (AudioSource != null) ;
+            {
+                AudioSource.Play();
+            }
         }
 
         // ── Exit ──────────────────────────────────────────────────────────
@@ -185,6 +191,8 @@ namespace StarterAssets
 
             if (CameraController != null && _originalCameraTarget != null)
                 CameraController.target = _originalCameraTarget;
+
+            AudioSource.Stop(); 
         }
 
         // ── Driving ───────────────────────────────────────────────────────

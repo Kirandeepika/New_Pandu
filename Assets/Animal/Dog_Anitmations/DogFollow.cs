@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class DogFollow : MonoBehaviour
 {
@@ -6,42 +7,66 @@ public class DogFollow : MonoBehaviour
     public float followDistance = 2f;
     public float speed = 3f;
 
+    [Header("Mobile UI")]
+    public Button CallButton;
+    public Button StopButton;
+
     private bool playerNearby = false;
     private bool isFollowing = false;
 
     public Animator animator;
-    public AudioSource audioSource; // ADD THIS
+    public AudioSource audioSource;
 
     private void Start()
     {
         audioSource = GetComponent<AudioSource>();
         audioSource.Stop();
+
+        if (CallButton != null)
+        {
+            CallButton.onClick.AddListener(OnCall);
+            CallButton.gameObject.SetActive(false);
+        }
+
+        if (StopButton != null)
+        {
+            StopButton.onClick.AddListener(OnStop);
+            StopButton.gameObject.SetActive(false);
+        }
     }
 
     void Update()
     {
+        // ── Keyboard input (works in Editor + PC + Mobile) ────────────────
         if (playerNearby && Input.GetKeyDown(KeyCode.V))
-        {
-            isFollowing = true;
-
-            // Bark once when called
-            audioSource.Play();
-        }
+            OnCall();
 
         if (Input.GetKeyDown(KeyCode.L))
-        {
-            isFollowing = false;
+            OnStop();
 
-            animator.SetBool("isRunning", false);
+        // ── Button visibility (works everywhere) ──────────────────────────
+        if (CallButton != null)
+            CallButton.gameObject.SetActive(playerNearby && !isFollowing);
 
-            // Stop sound
-            audioSource.Stop();
-        }
+        if (StopButton != null)
+            StopButton.gameObject.SetActive(isFollowing);
 
         if (isFollowing)
-        {
             FollowPlayer();
-        }
+    }
+
+    private void OnCall()
+    {
+        if (!playerNearby) return;
+        isFollowing = true;
+        audioSource.Play();
+    }
+
+    private void OnStop()
+    {
+        isFollowing = false;
+        animator.SetBool("isRunning", false);
+        audioSource.Stop();
     }
 
     void FollowPlayer()
@@ -52,15 +77,13 @@ public class DogFollow : MonoBehaviour
         {
             Vector3 target = player.position;
             target.y = transform.position.y;
-
             Vector3 direction = (target - transform.position).normalized;
-            transform.position += direction * speed * Time.deltaTime;
 
+            transform.position += direction * speed * Time.deltaTime;
             transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
 
             animator.SetBool("isRunning", true);
 
-            // Play running sound (loop)
             if (!audioSource.isPlaying)
                 audioSource.Play();
         }

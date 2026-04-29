@@ -71,6 +71,8 @@ namespace StarterAssets
         [Tooltip("Drag your player HUD/joystick Canvas here — it will hide while riding")]
         public GameObject PlayerControllerCanvas;
 
+        public AudioSource audioSource;
+
         // ── Public mobile input — set by MobileVehicleUI every frame ─────
         [HideInInspector] public float MobileDriveInput = 0f;
         [HideInInspector] public float MobileTurnInput = 0f;
@@ -168,6 +170,10 @@ namespace StarterAssets
                     ? VehicleCameraTarget
                     : transform;
             }
+            if (audioSource != null)
+            {
+                audioSource.Play();
+            }
         }
 
         // ── Exit ──────────────────────────────────────────────────────────
@@ -219,6 +225,8 @@ namespace StarterAssets
 
             if (CameraController != null && _originalCameraTarget != null)
                 CameraController.target = _originalCameraTarget;
+
+            audioSource.Stop();
         }
 
         // ── Riding ────────────────────────────────────────────────────────

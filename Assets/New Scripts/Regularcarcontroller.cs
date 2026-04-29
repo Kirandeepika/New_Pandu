@@ -24,6 +24,8 @@ namespace StarterAssets
         public ThirdPersonController PlayerController;
         public CharacterController PlayerCharacterController;
 
+        public AudioSource AudioSource;
+
         [Header("Camera")]
         public ThirdPersonCamera CameraController;
         public Transform VehicleCameraTarget;
@@ -110,6 +112,11 @@ namespace StarterAssets
 
             if (CameraController != null)
                 CameraController.target = VehicleCameraTarget != null ? VehicleCameraTarget : transform;
+
+            if (AudioSource != null)
+            {
+                AudioSource.Play();
+            }
         }
 
         // ── Exit ──────────────────────────────────────────────────────────
@@ -151,6 +158,8 @@ namespace StarterAssets
 
             if (CameraController != null && _originalCameraTarget != null)
                 CameraController.target = _originalCameraTarget;
+
+            AudioSource.Stop();
         }
 
         // ── Driving ───────────────────────────────────────────────────────

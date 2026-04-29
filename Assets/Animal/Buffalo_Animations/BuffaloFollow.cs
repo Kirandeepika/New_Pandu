@@ -1,16 +1,21 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class BuffaloFollow : MonoBehaviour
 {
     public Transform player;
     public float followDistance = 3f;
-    public float speed = 2f; // buffalo is slower than dog
+    public float speed = 2f;
+
+    [Header("Mobile UI")]
+    public Button CallButton;
+    public Button StopButton;
 
     private bool playerNearby = false;
     private bool isFollowing = false;
 
     private Animator animator;
-    private AudioSource audioSource;
+    public AudioSource audioSource;
 
     void Start()
     {
@@ -18,36 +23,57 @@ public class BuffaloFollow : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
 
         if (audioSource != null)
-            audioSource.Stop(); // no sound at start
+            audioSource.Stop();
+
+        if (CallButton != null)
+        {
+            CallButton.onClick.AddListener(OnCall);
+            CallButton.gameObject.SetActive(false);
+        }
+
+        if (StopButton != null)
+        {
+            StopButton.onClick.AddListener(OnStop);
+            StopButton.gameObject.SetActive(false);
+        }
     }
 
     void Update()
     {
-        // Press V → start following
+        // ── Keyboard input ────────────────────────────────────────────────
         if (playerNearby && Input.GetKeyDown(KeyCode.V))
-        {
-            isFollowing = true;
+            OnCall();
 
-            // play buffalo sound once
-            if (audioSource != null)
-                audioSource.Play();
-        }
-
-        // Press L → stop
         if (Input.GetKeyDown(KeyCode.L))
-        {
-            isFollowing = false;
+            OnStop();
 
-            animator.SetBool("isRunning", false);
+        // ── Button visibility ─────────────────────────────────────────────
+        if (CallButton != null)
+            CallButton.gameObject.SetActive(playerNearby && !isFollowing);
 
-            if (audioSource != null)
-                audioSource.Stop();
-        }
+        if (StopButton != null)
+            StopButton.gameObject.SetActive(isFollowing);
 
         if (isFollowing)
-        {
             FollowPlayer();
-        }
+    }
+
+    private void OnCall()
+    {
+        if (!playerNearby) return;
+        isFollowing = true;
+
+        if (audioSource != null)
+            audioSource.Play();
+    }
+
+    private void OnStop()
+    {
+        isFollowing = false;
+        animator.SetBool("isRunning", false);
+
+        if (audioSource != null)
+            audioSource.Stop();
     }
 
     void FollowPlayer()
@@ -58,15 +84,13 @@ public class BuffaloFollow : MonoBehaviour
         {
             Vector3 target = player.position;
             target.y = transform.position.y;
-
             Vector3 direction = (target - transform.position).normalized;
-            transform.position += direction * speed * Time.deltaTime;
 
+            transform.position += direction * speed * Time.deltaTime;
             transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
 
             animator.SetBool("isRunning", true);
 
-            // loop movement sound
             if (audioSource != null && !audioSource.isPlaying)
                 audioSource.Play();
         }
