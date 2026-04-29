@@ -4,79 +4,65 @@ using TMPro;
 
 namespace StarterAssets
 {
-    /// <summary>
-    /// Central state machine for the delivery mission.
-    /// Attach this to any persistent GameObject in the scene (e.g. GameManager).
-    /// </summary>
     public class DeliveryMissionManager : MonoBehaviour
     {
-        // ── Singleton ────────────────────────────────────────────────────
         public static DeliveryMissionManager Instance { get; private set; }
 
-        // ── Mission State ────────────────────────────────────────────────
         public enum MissionState
         {
-            Inactive,           // Mission not started
-            WaitingForBike,     // Player entered trigger but not on bike
-            WaitingToStart,     // Player on bike, "Start Mission" button visible
-            GoToPickup,         // Riding to the pickup/start waypoint
-            GoToDelivery,       // Parcel collected, riding to delivery point
-            Complete            // Mission finished
+            Inactive,
+            WaitingForBike,
+            ShowingStory,
+            WaitingToStart,
+            GoToPickup,
+            GoToDelivery,
+            Complete,
+            ShowingComplete     // ← new: showing complete image for 10 seconds
         }
 
         public MissionState CurrentState { get; private set; } = MissionState.Inactive;
 
-        // ── Inspector References ─────────────────────────────────────────
         [Header("References")]
-        [Tooltip("The BikeController in the scene")]
         public BikeController BikeController;
-
-        [Tooltip("The ThirdPersonController (player)")]
         public ThirdPersonController PlayerController;
 
         [Header("Waypoints")]
-        [Tooltip("Where the player must ride to accept/start the delivery")]
         public Transform PickupWaypoint;
-
-        [Tooltip("Where the player must deliver the parcel")]
         public Transform DeliveryWaypoint;
 
         [Header("Parcel")]
-        [Tooltip("The parcel box GameObject on the bike — hidden until collected")]
         public GameObject ParcelObject;
 
         [Header("Direction Indicator")]
-        [Tooltip("The plane/quad under the bike that arrow is painted on")]
         public Transform DirectionIndicatorPlane;
 
+        [Header("Story Screen")]
+        public CanvasGroup StoryPanelGroup;
+        public Image StoryImage;
+        public float StoryDuration = 5f;
+
+        [Header("Complete Screen")]
+        [Tooltip("The panel containing your mission complete image")]
+        public CanvasGroup CompletePanelGroup;
+
+        [Tooltip("The Image UI element — set your complete sprite in Inspector")]
+        public Image CompleteImage;
+
+        [Tooltip("Seconds to show the complete image before it disappears")]
+        public float CompleteDuration = 10f;
+
         [Header("UI")]
-        [Tooltip("Canvas Group for the 'Get on a bike!' prompt")]
         public CanvasGroup GetBikePromptGroup;
-
-        [Tooltip("TextMeshPro label inside the get-bike prompt")]
         public TextMeshProUGUI GetBikePromptText;
-
-        [Tooltip("The 'Start Mission' button shown once player is on bike")]
         public GameObject StartMissionButton;
-
-        [Tooltip("Canvas Group for the on-screen mission HUD (objective text)")]
         public CanvasGroup MissionHUDGroup;
-
-        [Tooltip("Objective label shown during the mission")]
         public TextMeshProUGUI ObjectiveText;
-
-        [Tooltip("Canvas Group for the mission-complete panel")]
         public CanvasGroup MissionCompleteGroup;
-
-        [Tooltip("How quickly UI panels fade in/out")]
         public float UIFadeSpeed = 3f;
 
-        // ── Private ──────────────────────────────────────────────────────
-        private float _getPromptAlpha = 0f;
-        private float _hudAlpha = 0f;
-        private float _completeAlpha = 0f;
+        private float _storyTimer = 0f;
+        private float _completeImageTimer = 0f;
 
-        // ─────────────────────────────────────────────────────────────────
         private void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
@@ -85,7 +71,6 @@ namespace StarterAssets
 
         private void Start()
         {
-            // Safe initial state
             if (ParcelObject != null) ParcelObject.SetActive(false);
             if (StartMissionButton != null) StartMissionButton.SetActive(false);
             if (DirectionIndicatorPlane != null) DirectionIndicatorPlane.gameObject.SetActive(false);
@@ -93,19 +78,51 @@ namespace StarterAssets
             SetCanvasAlpha(GetBikePromptGroup, 0f);
             SetCanvasAlpha(MissionHUDGroup, 0f);
             SetCanvasAlpha(MissionCompleteGroup, 0f);
+            SetCanvasAlpha(StoryPanelGroup, 0f);
+            SetCanvasAlpha(CompletePanelGroup, 0f);
         }
 
         private void Update()
         {
             HandleUIFade();
+            HandleStoryTimer();
+            HandleCompleteImageTimer();
 
-            if (CurrentState == MissionState.GoToPickup || CurrentState == MissionState.GoToDelivery)
+            if (CurrentState == MissionState.GoToPickup ||
+                CurrentState == MissionState.GoToDelivery)
                 UpdateDirectionIndicator();
         }
 
-        // ── Public API called by trigger zones ───────────────────────────
+        // ── Story Timer ───────────────────────────────────────────────────
+        private void HandleStoryTimer()
+        {
+            if (CurrentState != MissionState.ShowingStory) return;
 
-        /// <summary>Called by MissionTriggerZone when the player enters.</summary>
+            _storyTimer += Time.deltaTime;
+
+            if (_storyTimer >= StoryDuration)
+            {
+                SetCanvasAlpha(StoryPanelGroup, 0f, instant: true);
+                SetState(MissionState.WaitingToStart);
+            }
+        }
+
+        // ── Complete Image Timer ──────────────────────────────────────────
+        private void HandleCompleteImageTimer()
+        {
+            if (CurrentState != MissionState.ShowingComplete) return;
+
+            _completeImageTimer += Time.deltaTime;
+
+            if (_completeImageTimer >= CompleteDuration)
+            {
+                // Hide complete image and reset mission
+                SetCanvasAlpha(CompletePanelGroup, 0f, instant: true);
+                SetState(MissionState.Inactive);
+            }
+        }
+
+        // ── Public API ────────────────────────────────────────────────────
         public void OnPlayerEnteredMissionZone()
         {
             if (CurrentState != MissionState.Inactive) return;
@@ -113,33 +130,23 @@ namespace StarterAssets
             bool isRiding = BikeController != null && IsPlayerRiding();
 
             if (!isRiding)
-            {
                 SetState(MissionState.WaitingForBike);
-            }
             else
-            {
-                SetState(MissionState.WaitingToStart);
-            }
+                SetState(MissionState.ShowingStory);
         }
 
-        /// <summary>Called by MissionTriggerZone when player exits (optional cleanup).</summary>
         public void OnPlayerExitedMissionZone()
         {
-            if (CurrentState == MissionState.WaitingForBike || CurrentState == MissionState.WaitingToStart)
-            {
+            if (CurrentState == MissionState.WaitingForBike)
                 SetState(MissionState.Inactive);
-                if (StartMissionButton != null) StartMissionButton.SetActive(false);
-            }
         }
 
-        /// <summary>Called every frame by MissionTriggerZone while player is inside.</summary>
         public void OnPlayerInsideMissionZone()
         {
             if (CurrentState == MissionState.WaitingForBike && IsPlayerRiding())
-                SetState(MissionState.WaitingToStart);
+                SetState(MissionState.ShowingStory);
         }
 
-        /// <summary>Hooked to the Start Mission UI button's OnClick event.</summary>
         public void OnStartMissionButtonPressed()
         {
             if (CurrentState != MissionState.WaitingToStart) return;
@@ -147,7 +154,6 @@ namespace StarterAssets
             SetState(MissionState.GoToPickup);
         }
 
-        /// <summary>Called by PickupWaypointTrigger when player arrives.</summary>
         public void OnReachedPickup()
         {
             if (CurrentState != MissionState.GoToPickup) return;
@@ -155,7 +161,6 @@ namespace StarterAssets
             SetState(MissionState.GoToDelivery);
         }
 
-        /// <summary>Called by DeliveryWaypointTrigger when player delivers.</summary>
         public void OnReachedDelivery()
         {
             if (CurrentState != MissionState.GoToDelivery) return;
@@ -168,45 +173,58 @@ namespace StarterAssets
         {
             CurrentState = next;
 
-            // Reset indicator
             if (DirectionIndicatorPlane != null)
                 DirectionIndicatorPlane.gameObject.SetActive(
-                    next == MissionState.GoToPickup || next == MissionState.GoToDelivery);
+                    next == MissionState.GoToPickup ||
+                    next == MissionState.GoToDelivery);
 
             switch (next)
             {
                 case MissionState.Inactive:
                     SetCanvasAlpha(GetBikePromptGroup, 0f, instant: true);
+                    SetCanvasAlpha(StoryPanelGroup, 0f, instant: true);
+                    SetCanvasAlpha(CompletePanelGroup, 0f, instant: true);
+                    if (StartMissionButton != null) StartMissionButton.SetActive(false);
                     break;
 
                 case MissionState.WaitingForBike:
                     if (GetBikePromptText != null)
                         GetBikePromptText.text = "You need a bike for this mission!\nFind one and come back.";
-                    _getPromptAlpha = 1f; // trigger fade-in
+                    break;
+
+                case MissionState.ShowingStory:
+                    SetCanvasAlpha(GetBikePromptGroup, 0f, instant: true);
+                    if (StartMissionButton != null) StartMissionButton.SetActive(false);
+                    SetCanvasAlpha(StoryPanelGroup, 1f);
+                    _storyTimer = 0f;
                     break;
 
                 case MissionState.WaitingToStart:
-                    SetCanvasAlpha(GetBikePromptGroup, 0f, instant: true);
                     if (StartMissionButton != null) StartMissionButton.SetActive(true);
                     break;
 
                 case MissionState.GoToPickup:
                     if (ObjectiveText != null)
-                        ObjectiveText.text = "Ride to the pickup point.";
-                    _hudAlpha = 1f;
+                        ObjectiveText.text = "📦 Ride to the pickup point.";
                     break;
 
                 case MissionState.GoToDelivery:
                     if (ObjectiveText != null)
-                        ObjectiveText.text = "Deliver the parcel!";
+                        ObjectiveText.text = "🚚 Deliver the parcel!";
                     break;
 
                 case MissionState.Complete:
+                    // Hide HUD, show complete image
                     if (DirectionIndicatorPlane != null)
                         DirectionIndicatorPlane.gameObject.SetActive(false);
-                    _hudAlpha = 0f;
-                    _completeAlpha = 1f;
-                    Invoke(nameof(FadeOutComplete), 3f);
+                    SetCanvasAlpha(MissionHUDGroup, 0f, instant: true);
+                    SetState(MissionState.ShowingComplete);
+                    break;
+
+                case MissionState.ShowingComplete:
+                    // Show complete image for 10 seconds
+                    SetCanvasAlpha(CompletePanelGroup, 1f);
+                    _completeImageTimer = 0f;
                     break;
             }
         }
@@ -217,30 +235,24 @@ namespace StarterAssets
             if (DirectionIndicatorPlane == null) return;
 
             Transform target = CurrentState == MissionState.GoToPickup
-                ? PickupWaypoint
-                : DeliveryWaypoint;
+                ? PickupWaypoint : DeliveryWaypoint;
 
             if (target == null) return;
 
-            // Parent the indicator to the bike so it moves with it
             Transform bikeTransform = BikeController != null ? BikeController.transform : null;
             if (bikeTransform == null) return;
 
-            Vector3 directionToTarget = target.position - bikeTransform.position;
-            directionToTarget.y = 0f;
+            Vector3 dir = target.position - bikeTransform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude < 0.01f) return;
 
-            if (directionToTarget.sqrMagnitude < 0.01f) return;
-
-            // Rotate only on Y axis to point toward target
-            float angle = Mathf.Atan2(directionToTarget.x, directionToTarget.z) * Mathf.Rad2Deg;
+            float angle = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
             DirectionIndicatorPlane.rotation = Quaternion.Euler(90f, angle, 0f);
         }
 
         // ── Helpers ───────────────────────────────────────────────────────
         private bool IsPlayerRiding()
         {
-            // Relies on BikeController's _isRiding — expose via property or use this workaround:
-            // We check if the PlayerController is disabled (it gets disabled when riding)
             return PlayerController != null && !PlayerController.enabled;
         }
 
@@ -248,7 +260,7 @@ namespace StarterAssets
         {
             if (GetBikePromptGroup != null)
             {
-                float target = (CurrentState == MissionState.WaitingForBike) ? 1f : 0f;
+                float target = CurrentState == MissionState.WaitingForBike ? 1f : 0f;
                 GetBikePromptGroup.alpha = Mathf.MoveTowards(
                     GetBikePromptGroup.alpha, target, UIFadeSpeed * Time.deltaTime);
             }
@@ -263,7 +275,7 @@ namespace StarterAssets
 
             if (MissionCompleteGroup != null)
             {
-                float target = (CurrentState == MissionState.Complete) ? 1f : 0f;
+                float target = CurrentState == MissionState.Complete ? 1f : 0f;
                 MissionCompleteGroup.alpha = Mathf.MoveTowards(
                     MissionCompleteGroup.alpha, target, UIFadeSpeed * Time.deltaTime);
             }
