@@ -11,8 +11,12 @@ public class BuffaloFollow : MonoBehaviour
     public Button CallButton;
     public Button StopButton;
 
+    [Header("Follow Timer")]
+    public float followDuration = 30f;
+
     private bool playerNearby = false;
     private bool isFollowing = false;
+    private float followTimer = 0f;
 
     private Animator animator;
     public AudioSource audioSource;
@@ -54,14 +58,26 @@ public class BuffaloFollow : MonoBehaviour
         if (StopButton != null)
             StopButton.gameObject.SetActive(isFollowing);
 
+        // ── Follow + Timer logic ──────────────────────────────────────────
         if (isFollowing)
+        {
+            followTimer -= Time.deltaTime;
+
+            if (followTimer <= 0f)
+            {
+                OnStop(); // Timer expired → go idle
+                return;
+            }
+
             FollowPlayer();
+        }
     }
 
     private void OnCall()
     {
         if (!playerNearby) return;
         isFollowing = true;
+        followTimer = followDuration; // Reset timer every time you call
 
         if (audioSource != null)
             audioSource.Play();
@@ -70,6 +86,7 @@ public class BuffaloFollow : MonoBehaviour
     private void OnStop()
     {
         isFollowing = false;
+        followTimer = 0f;
         animator.SetBool("isRunning", false);
 
         if (audioSource != null)

@@ -11,8 +11,12 @@ public class DogFollow : MonoBehaviour
     public Button CallButton;
     public Button StopButton;
 
+    [Header("Follow Timer")]
+    public float followDuration = 30f;
+
     private bool playerNearby = false;
     private bool isFollowing = false;
+    private float followTimer = 0f;
 
     public Animator animator;
     public AudioSource audioSource;
@@ -37,34 +41,47 @@ public class DogFollow : MonoBehaviour
 
     void Update()
     {
-        // ── Keyboard input (works in Editor + PC + Mobile) ────────────────
+        // ── Keyboard input ────────────────────────────────────────────────
         if (playerNearby && Input.GetKeyDown(KeyCode.V))
             OnCall();
 
         if (Input.GetKeyDown(KeyCode.L))
             OnStop();
 
-        // ── Button visibility (works everywhere) ──────────────────────────
+        // ── Button visibility ─────────────────────────────────────────────
         if (CallButton != null)
             CallButton.gameObject.SetActive(playerNearby && !isFollowing);
 
         if (StopButton != null)
             StopButton.gameObject.SetActive(isFollowing);
 
+        // ── Follow + Timer logic ──────────────────────────────────────────
         if (isFollowing)
+        {
+            followTimer -= Time.deltaTime;
+
+            if (followTimer <= 0f)
+            {
+                OnStop(); // Timer expired → go idle
+                return;
+            }
+
             FollowPlayer();
+        }
     }
 
     private void OnCall()
     {
         if (!playerNearby) return;
         isFollowing = true;
+        followTimer = followDuration; // Reset timer every time you call
         audioSource.Play();
     }
 
     private void OnStop()
     {
         isFollowing = false;
+        followTimer = 0f;
         animator.SetBool("isRunning", false);
         audioSource.Stop();
     }
