@@ -1,6 +1,9 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM 
+using Unity.VectorGraphics;
+using UnityEngine.SceneManagement;
+
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
@@ -82,6 +85,8 @@ namespace StarterAssets
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
+        public GameObject restartpanel;
+
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
@@ -142,6 +147,7 @@ namespace StarterAssets
 
         private void Start()
         {
+            Time.timeScale = 1f; // Resume the game
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
             _hasAnimator = TryGetComponent(out _animator);
@@ -168,6 +174,13 @@ namespace StarterAssets
             JumpAndGravity();
             GroundedCheck();
             Move();
+            if (Health <= 0f)
+            {
+                Time.timeScale = 0f; // Pause the game
+                restartpanel.SetActive(true); // Show the restart panel
+                
+            }
+
         }
 
         private void LateUpdate()
@@ -195,6 +208,13 @@ namespace StarterAssets
         {
             // Add your death logic here (respawn, game over screen etc.)
             Debug.Log("Player died!");
+        }
+
+        public void RestartGame()
+        {
+            
+            restartpanel.SetActive(false); // Hide the restart panel
+            SceneManager.LoadScene("GameScene"); // Reload the current scene
         }
 
         // ─────────────────────────────────────────────────────────────────
