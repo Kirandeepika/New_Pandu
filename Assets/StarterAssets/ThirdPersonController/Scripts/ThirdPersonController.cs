@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
-using Unity.VectorGraphics;
 using UnityEngine.SceneManagement;
 
 #if ENABLE_INPUT_SYSTEM
@@ -79,13 +78,18 @@ namespace StarterAssets
         [Tooltip("How far in degrees can you move the camera down")]
         public float BottomClamp = -30.0f;
 
-        [Tooltip("Additional degress to override the camera. Useful for fine tuning camera position when locked")]
+        [Tooltip("Additional degrees to override the camera. Useful for fine tuning camera position when locked")]
         public float CameraAngleOverride = 0.0f;
 
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
         public GameObject restartpanel;
+
+        // ── Speed Boost (used by SpeedBoostUI) ───────────────────────────
+        [HideInInspector] public float BaseMoveSpeed;
+        [HideInInspector] public float BaseSprintSpeed;
+        [HideInInspector] public bool IsSpeedBoosted = false;
 
         // cinemachine
         private float _cinemachineTargetYaw;
@@ -147,12 +151,13 @@ namespace StarterAssets
 
         private void Start()
         {
-            Time.timeScale = 1f; // Resume the game
+            Time.timeScale = 1f;
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
             _hasAnimator = TryGetComponent(out _animator);
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
+
 #if ENABLE_INPUT_SYSTEM 
             _playerInput = GetComponent<PlayerInput>();
 #else
@@ -163,9 +168,12 @@ namespace StarterAssets
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
 
-            // Initialise health bar
             Health = 1f;
             UpdateHealthBar();
+
+            // ── Save base speeds so boost math is always accurate ─────────
+            BaseMoveSpeed = MoveSpeed;
+            BaseSprintSpeed = SprintSpeed;
         }
 
         private void Update()
@@ -174,13 +182,12 @@ namespace StarterAssets
             JumpAndGravity();
             GroundedCheck();
             Move();
+
             if (Health <= 0f)
             {
-                Time.timeScale = 0f; // Pause the game
-                restartpanel.SetActive(true); // Show the restart panel
-                
+                Time.timeScale = 0f;
+                restartpanel.SetActive(true);
             }
-
         }
 
         private void LateUpdate()
@@ -206,15 +213,29 @@ namespace StarterAssets
 
         private void OnDie()
         {
-            // Add your death logic here (respawn, game over screen etc.)
             Debug.Log("Player died!");
         }
 
         public void RestartGame()
         {
-            
-            restartpanel.SetActive(false); // Hide the restart panel
-            SceneManager.LoadScene("GameScene"); // Reload the current scene
+            restartpanel.SetActive(false);
+            SceneManager.LoadScene("GameScene");
+        }
+
+        // ── Speed Boost API (called by SpeedBoostUI) ─────────────────────
+        public void ApplySpeedBoost(float multiplier)
+        {
+            if (IsSpeedBoosted) return;         // Prevent stacking
+            IsSpeedBoosted = true;
+            MoveSpeed = BaseMoveSpeed * multiplier;
+            SprintSpeed = BaseSprintSpeed * multiplier;
+        }
+
+        public void RemoveSpeedBoost()
+        {
+            MoveSpeed = BaseMoveSpeed;
+            SprintSpeed = BaseSprintSpeed;
+            IsSpeedBoosted = false;
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -251,7 +272,8 @@ namespace StarterAssets
             _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 
             CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
-                _cinemachineTargetPitch + CameraAngleOverride, _cinemachineTargetYaw, 0.0f);
+                _cinemachineTargetPitch + CameraAngleOverride,
+                _cinemachineTargetYaw, 0.0f);
         }
 
         private void Move()
@@ -322,7 +344,6 @@ namespace StarterAssets
                 if (_input.jump && _jumpTimeoutDelta <= 0.0f)
                 {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
-
                     if (_hasAnimator)
                         _animator.SetBool(_animIDJump, true);
                 }
@@ -335,9 +356,7 @@ namespace StarterAssets
                 _jumpTimeoutDelta = JumpTimeout;
 
                 if (_fallTimeoutDelta >= 0.0f)
-                {
                     _fallTimeoutDelta -= Time.deltaTime;
-                }
                 else
                 {
                     if (_hasAnimator)
@@ -364,10 +383,9 @@ namespace StarterAssets
             Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
 
             Gizmos.color = Grounded ? transparentGreen : transparentRed;
-            Gizmos.DrawSphere(
-                new Vector3(transform.position.x,
-                    transform.position.y - GroundedOffset,
-                    transform.position.z), GroundedRadius);
+            Gizmos.DrawSphere(new Vector3(transform.position.x,
+                transform.position.y - GroundedOffset,
+                transform.position.z), GroundedRadius);
         }
 
         private void OnFootstep(AnimationEvent animationEvent)
