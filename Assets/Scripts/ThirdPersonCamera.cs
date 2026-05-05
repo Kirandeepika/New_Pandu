@@ -17,7 +17,6 @@ public class ThirdPersonCamera : MonoBehaviour
     private float yaw = 0f;
     private float pitch = 0f;
 
-    // Track which finger ID is controlling the camera
     private int _cameraTouchId = -1;
 
     void LateUpdate()
@@ -43,18 +42,22 @@ public class ThirdPersonCamera : MonoBehaviour
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
 #else
-        // ── Mobile: Touch input ───────────────────────────────────────────
+        // ── Mobile: Touch input (RIGHT half of screen only) ───────────────
+        float screenMidX = Screen.width * 0.5f;
+
         for (int i = 0; i < Input.touchCount; i++)
         {
             Touch touch = Input.GetTouch(i);
 
-            // Phase: began — try to claim this finger for camera
             if (touch.phase == TouchPhase.Began)
             {
-                // Skip if touch started over any UI element (joystick, buttons etc.)
+                // ✅ Only allow touches that START on the right half
+                if (touch.position.x < screenMidX) continue;
+
+                // ✅ Skip touches over UI elements (buttons, joystick, etc.)
                 if (IsTouchOverUI(touch.fingerId)) continue;
 
-                // Only claim if no finger is currently controlling camera
+                // Claim this finger for camera control
                 if (_cameraTouchId == -1)
                     _cameraTouchId = touch.fingerId;
             }
@@ -69,7 +72,7 @@ public class ThirdPersonCamera : MonoBehaviour
                 pitch  = Mathf.Clamp(pitch, minPitch, maxPitch);
             }
 
-            // Phase: ended or cancelled — release the finger
+            // Release finger when lifted or cancelled
             if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
                 _cameraTouchId = -1;
         }
