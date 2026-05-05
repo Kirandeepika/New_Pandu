@@ -12213,8 +12213,10 @@ MonoBehaviour:
   mouseSensitivity: 3
   touchSensitivity: 0.1
   offset: {x: 0, y: -1, z: 0}
-  minPitch: -20
+  minPitch: -18.5
   maxPitch: 45
+  vehicleTransform: {fileID: 4127759454345562118}
+  vehicleYawFollowSpeed: 8
 --- !u!1 &233684791
 GameObject:
   m_ObjectHideFlags: 0
@@ -77420,6 +77422,8 @@ MonoBehaviour:
   offset: {x: 0, y: -1, z: 0}
   minPitch: -20
   maxPitch: 45
+  vehicleTransform: {fileID: 4686380027541396087}
+  vehicleYawFollowSpeed: 8
 --- !u!1001 &1430691012
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -90383,9 +90387,11 @@ MonoBehaviour:
   height: 0.36
   mouseSensitivity: 3
   touchSensitivity: 0.1
-  offset: {x: 0, y: -1, z: 0}
-  minPitch: -20
+  offset: {x: 0, y: -5, z: 0}
+  minPitch: -18.5
   maxPitch: 45
+  vehicleTransform: {fileID: 4165648779866448377}
+  vehicleYawFollowSpeed: 8
 --- !u!1 &1677240355
 GameObject:
   m_ObjectHideFlags: 0
@@ -93309,6 +93315,8 @@ MonoBehaviour:
   offset: {x: 0, y: 1.5, z: 0}
   minPitch: -20
   maxPitch: 45
+  vehicleTransform: {fileID: 0}
+  vehicleYawFollowSpeed: 8
 --- !u!1 &1727950326
 GameObject:
   m_ObjectHideFlags: 0

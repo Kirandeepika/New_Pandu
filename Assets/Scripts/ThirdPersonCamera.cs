@@ -14,6 +14,13 @@ public class ThirdPersonCamera : MonoBehaviour
     public float minPitch = -20f;
     public float maxPitch = 45f;
 
+    [Header("Vehicle Follow")]
+    [Tooltip("Assign this when entering a vehicle, null it on exit")]
+    public Transform vehicleTransform = null;
+
+    [Tooltip("How fast camera snaps to face vehicle direction (higher = snappier)")]
+    public float vehicleYawFollowSpeed = 8f;
+
     private float yaw = 0f;
     private float pitch = 0f;
 
@@ -24,6 +31,13 @@ public class ThirdPersonCamera : MonoBehaviour
         if (target == null || !target.gameObject.activeInHierarchy) return;
 
         HandleInput();
+
+        // ── If driving, snap yaw toward vehicle's facing direction ────────
+        if (vehicleTransform != null)
+        {
+            float vehicleYaw = vehicleTransform.eulerAngles.y;
+            yaw = Mathf.LerpAngle(yaw, vehicleYaw, vehicleYawFollowSpeed * Time.deltaTime);
+        }
 
         Quaternion rot = Quaternion.Euler(pitch, yaw, 0);
         Vector3 dir = new Vector3(0, 0, -distance);
@@ -51,18 +65,12 @@ public class ThirdPersonCamera : MonoBehaviour
 
             if (touch.phase == TouchPhase.Began)
             {
-                // ✅ Only allow touches that START on the right half
                 if (touch.position.x < screenMidX) continue;
-
-                // ✅ Skip touches over UI elements (buttons, joystick, etc.)
                 if (IsTouchOverUI(touch.fingerId)) continue;
-
-                // Claim this finger for camera control
                 if (_cameraTouchId == -1)
                     _cameraTouchId = touch.fingerId;
             }
 
-            // Only process the finger we claimed
             if (touch.fingerId != _cameraTouchId) continue;
 
             if (touch.phase == TouchPhase.Moved)
@@ -72,7 +80,6 @@ public class ThirdPersonCamera : MonoBehaviour
                 pitch  = Mathf.Clamp(pitch, minPitch, maxPitch);
             }
 
-            // Release finger when lifted or cancelled
             if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
                 _cameraTouchId = -1;
         }
