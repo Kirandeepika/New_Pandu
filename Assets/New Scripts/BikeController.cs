@@ -91,6 +91,10 @@ namespace StarterAssets
         private Transform _playerTransform;
         private Transform _originalCameraTarget;
 
+        [Header("Minimap")]
+        public GameObject MiniMap;
+        public GameObject Logo;
+
 #if ENABLE_INPUT_SYSTEM
         private Keyboard _kb;
 #endif
@@ -112,6 +116,8 @@ namespace StarterAssets
 
             if (CameraController != null)
                 _originalCameraTarget = CameraController.target;
+
+            Logo.SetActive(false);
         }
 
         // ─────────────────────────────────────────────────────────────────
@@ -177,6 +183,17 @@ namespace StarterAssets
 
             if (CameraController != null)
                 CameraController.vehicleTransform = transform;
+
+            if(Logo != null)
+            {
+                Logo.SetActive(true);
+            }
+
+            if(MiniMap != null)
+            { 
+                MiniMap.SetActive(true);
+            }
+               
         }
 
         // ── Exit ──────────────────────────────────────────────────────────
@@ -233,6 +250,16 @@ namespace StarterAssets
 
             if (CameraController != null)
                 CameraController.vehicleTransform = null;
+
+            if(Logo != null)
+            {
+                Logo.SetActive(false);
+            }
+
+            if (MiniMap != null)
+            {
+                MiniMap.SetActive(false);
+            }
         }
 
         // ── Riding ────────────────────────────────────────────────────────
