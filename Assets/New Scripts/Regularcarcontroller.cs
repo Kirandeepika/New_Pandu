@@ -31,16 +31,12 @@ namespace StarterAssets
         public Transform VehicleCameraTarget;
 
         [Header("Mobile UI")]
-        [Tooltip("Drag your player HUD/joystick Canvas here — it will hide while driving")]
         public GameObject PlayerControllerCanvas;
 
-        // ── Public mobile input — set by MobileVehicleUI every frame ─────
-        // MobileVehicleUI writes directly to these instead of using Reflection
         [HideInInspector] public float MobileDriveInput = 0f;
         [HideInInspector] public float MobileTurnInput = 0f;
         [HideInInspector] public bool UseMobileInput = false;
 
-        // ── Private state ─────────────────────────────────────────────────
         private float _currentSpeed = 0f;
         private float _turnInput = 0f;
         private float _driveInput = 0f;
@@ -52,6 +48,10 @@ namespace StarterAssets
         public GameObject MiniMap;
         public GameObject Logo;
 
+        // 🔥 AUTO RESET
+        [Header("Auto Reset")]
+        public float resetTime = 2f;
+        private float _flipTimer = 0f;
 
 #if ENABLE_INPUT_SYSTEM
         private Keyboard _kb;
@@ -68,7 +68,7 @@ namespace StarterAssets
             if (CameraController != null)
                 _originalCameraTarget = CameraController.target;
 
-            Logo.SetActive(false);
+            if (Logo != null) Logo.SetActive(false);
         }
 
         private void Update()
@@ -78,15 +78,60 @@ namespace StarterAssets
             if (_kb == null && !UseMobileInput) return;
 #endif
             if (_isDriving)
+            {
                 HandleDriving();
+                AutoResetCheck(); // 🔥 ADDED
+            }
             else
+            {
                 CheckForEntry();
+            }
         }
 
-        // ── Entry ─────────────────────────────────────────────────────────
+        // 🔥 AUTO RESET CHECK
+        void AutoResetCheck()
+        {
+            if (transform.up.y < 0.3f)
+            {
+                _flipTimer += Time.deltaTime;
+
+                if (_flipTimer >= resetTime)
+                {
+                    ResetCar();
+                }
+            }
+            else
+            {
+                _flipTimer = 0f;
+            }
+        }
+
+        // 🔥 RESET FUNCTION
+        void ResetCar()
+        {
+            _flipTimer = 0f;
+
+            _currentSpeed = 0f;
+
+            // Lift a bit
+            transform.position += Vector3.up * 1.5f;
+
+            // Reset rotation
+            transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+
+            // Rigidbody safety (if added later)
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
         private void CheckForEntry()
         {
             if (_playerTransform == null) return;
+
             float dist = Vector3.Distance(_playerTransform.position, transform.position);
             if (dist > EntryRadius) return;
 
@@ -108,7 +153,6 @@ namespace StarterAssets
             if (PlayerController != null) PlayerController.enabled = false;
             if (PlayerCharacterController != null) PlayerCharacterController.enabled = false;
 
-            // ── Hide player HUD/joystick canvas ──
             if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(false);
 
             if (_playerTransform != null)
@@ -118,28 +162,17 @@ namespace StarterAssets
             }
 
             if (CameraController != null)
+            {
                 CameraController.target = VehicleCameraTarget != null ? VehicleCameraTarget : transform;
-
-            if (AudioSource != null)
-            {
-                AudioSource.Play();
-            }
-
-            if (CameraController != null)
                 CameraController.vehicleTransform = transform;
-
-            if (Logo != null)
-            {
-                Logo.SetActive(true);
             }
 
-            if (MiniMap != null)
-            {
-                MiniMap.SetActive(true);
-            }
+            if (AudioSource != null) AudioSource.Play();
+
+            if (Logo != null) Logo.SetActive(true);
+            if (MiniMap != null) MiniMap.SetActive(true);
         }
 
-        // ── Exit ──────────────────────────────────────────────────────────
         public void ExitVehicle()
         {
             _isDriving = false;
@@ -173,34 +206,24 @@ namespace StarterAssets
             if (PlayerModel != null) PlayerModel.SetActive(true);
             if (PlayerController != null) PlayerController.enabled = true;
 
-            // ── Show player HUD/joystick canvas again ──
             if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(true);
 
             if (CameraController != null && _originalCameraTarget != null)
+            {
                 CameraController.target = _originalCameraTarget;
-
-            AudioSource.Stop();
-
-            if (CameraController != null)
                 CameraController.vehicleTransform = null;
-
-            if (Logo != null)
-            {
-                Logo.SetActive(false);
             }
 
-            if (MiniMap != null)
-            {
-                MiniMap.SetActive(false);
-            }
+            if (AudioSource != null) AudioSource.Stop();
+
+            if (Logo != null) Logo.SetActive(false);
+            if (MiniMap != null) MiniMap.SetActive(false);
         }
 
-        // ── Driving ───────────────────────────────────────────────────────
         private void HandleDriving()
         {
             ReadInput();
 
-            // Keyboard exit (PC fallback)
 #if ENABLE_INPUT_SYSTEM
             if (_kb != null && _kb.eKey.wasPressedThisFrame)
 #else
@@ -242,7 +265,6 @@ namespace StarterAssets
         {
             if (UseMobileInput)
             {
-                // ── Mobile: read public fields written by MobileVehicleUI ──
                 _driveInput = MobileDriveInput;
                 _turnInput = MobileTurnInput;
             }

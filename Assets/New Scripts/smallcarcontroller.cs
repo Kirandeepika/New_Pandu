@@ -8,57 +8,31 @@ namespace StarterAssets
     public class SmallCarController : MonoBehaviour
     {
         [Header("Small Car — Driving Settings")]
-        [Tooltip("Top speed in m/s")]
         public float MaxSpeed = 14f;
-
-        [Tooltip("How quickly the car accelerates")]
         public float Acceleration = 8f;
-
-        [Tooltip("How quickly the car brakes / decelerates")]
         public float Deceleration = 12f;
-
-        [Tooltip("How fast the car turns (higher = snappier)")]
         public float TurnSpeed = 120f;
-
-        [Tooltip("Drag applied when no input is given (coast friction)")]
         public float CoastDrag = 3f;
 
         [Header("Entry / Exit")]
-        [Tooltip("How close the player must be to press E and enter")]
         public float EntryRadius = 3f;
-
-        [Tooltip("Where the player is placed when they exit the vehicle")]
         public Transform ExitPoint;
-
-        [Tooltip("The player's root GameObject — hidden while driving")]
         public GameObject PlayerModel;
-
-        [Tooltip("The ThirdPersonController script on the player")]
         public ThirdPersonController PlayerController;
-
-        [Tooltip("The player's CharacterController component")]
         public CharacterController PlayerCharacterController;
-
-        [Tooltip("The sample boy/dummy model sitting in the vehicle — shown while driving, hidden otherwise")]
         public GameObject SeatModel;
 
         [Header("Camera")]
-        [Tooltip("Drag your ThirdPersonCamera GameObject here")]
         public ThirdPersonCamera CameraController;
-
-        [Tooltip("Empty child GameObject on the car at roof/seat height for camera to follow")]
         public Transform VehicleCameraTarget;
 
         [Header("Mobile UI")]
-        [Tooltip("Drag your player HUD/joystick Canvas here — it will hide while driving")]
         public GameObject PlayerControllerCanvas;
 
-        // ── Public mobile input — set by MobileVehicleUI every frame ─────
         [HideInInspector] public float MobileDriveInput = 0f;
         [HideInInspector] public float MobileTurnInput = 0f;
         [HideInInspector] public bool UseMobileInput = false;
 
-        // ── Private state ─────────────────────────────────────────────────
         private float _currentSpeed = 0f;
         private float _turnInput = 0f;
         private float _driveInput = 0f;
@@ -72,12 +46,15 @@ namespace StarterAssets
         public GameObject MiniMap;
         public GameObject Logo;
 
+        // 🔥 AUTO RESET (ADDED)
+        [Header("Auto Reset")]
+        public float resetTime = 2f;
+        private float _flipTimer = 0f;
 
 #if ENABLE_INPUT_SYSTEM
         private Keyboard _kb;
 #endif
 
-        // ─────────────────────────────────────────────────────────────────
         private void Start()
         {
 #if ENABLE_INPUT_SYSTEM
@@ -91,10 +68,9 @@ namespace StarterAssets
 
             if (SeatModel != null) SeatModel.SetActive(false);
 
-            Logo.SetActive(false);
+            if (Logo != null) Logo.SetActive(false);
         }
 
-        // ─────────────────────────────────────────────────────────────────
         private void Update()
         {
 #if ENABLE_INPUT_SYSTEM
@@ -102,12 +78,57 @@ namespace StarterAssets
             if (_kb == null && !UseMobileInput) return;
 #endif
             if (_isDriving)
+            {
                 HandleDriving();
+                AutoResetCheck(); // 🔥 ADDED
+            }
             else
+            {
                 CheckForEntry();
+            }
         }
 
-        // ── Entry ─────────────────────────────────────────────────────────
+        // 🔥 AUTO RESET CHECK
+        void AutoResetCheck()
+        {
+            // If car is tilted or flipped
+            if (transform.up.y < 0.3f)
+            {
+                _flipTimer += Time.deltaTime;
+
+                if (_flipTimer >= resetTime)
+                {
+                    ResetCar();
+                }
+            }
+            else
+            {
+                _flipTimer = 0f;
+            }
+        }
+
+        // 🔥 RESET FUNCTION
+        void ResetCar()
+        {
+            _flipTimer = 0f;
+
+            _currentSpeed = 0f;
+
+            // Lift slightly
+            transform.position += Vector3.up * 1.5f;
+
+            // Reset rotation upright
+            transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+
+            // If Rigidbody exists (important safety)
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
         private void CheckForEntry()
         {
             if (_playerTransform == null) return;
@@ -135,7 +156,6 @@ namespace StarterAssets
             if (PlayerController != null) PlayerController.enabled = false;
             if (PlayerCharacterController != null) PlayerCharacterController.enabled = false;
 
-            // Hide player HUD/joystick canvas
             if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(false);
 
             if (_playerTransform != null)
@@ -149,28 +169,17 @@ namespace StarterAssets
                 CameraController.target = VehicleCameraTarget != null
                     ? VehicleCameraTarget
                     : transform;
-            }
 
-            if (AudioSource != null) ;
-            {
-                AudioSource.Play();
-            }
-
-            if (CameraController != null)
                 CameraController.vehicleTransform = transform;
-
-            if (Logo != null)
-            {
-                Logo.SetActive(true);
             }
 
-            if (MiniMap != null)
-            {
-                MiniMap.SetActive(true);
-            }
+            if (AudioSource != null)
+                AudioSource.Play();
+
+            if (Logo != null) Logo.SetActive(true);
+            if (MiniMap != null) MiniMap.SetActive(true);
         }
 
-        // ── Exit ──────────────────────────────────────────────────────────
         public void ExitVehicle()
         {
             _isDriving = false;
@@ -206,29 +215,21 @@ namespace StarterAssets
 
             if (PlayerController != null) PlayerController.enabled = true;
 
-            // Show player HUD/joystick canvas again
             if (PlayerControllerCanvas != null) PlayerControllerCanvas.SetActive(true);
 
             if (CameraController != null && _originalCameraTarget != null)
+            {
                 CameraController.target = _originalCameraTarget;
-
-            AudioSource.Stop();
-
-            if (CameraController != null)
                 CameraController.vehicleTransform = null;
-
-            if (Logo != null)
-            {
-                Logo.SetActive(false);
             }
 
-            if (MiniMap != null)
-            {
-                MiniMap.SetActive(false);
-            }
+            if (AudioSource != null)
+                AudioSource.Stop();
+
+            if (Logo != null) Logo.SetActive(false);
+            if (MiniMap != null) MiniMap.SetActive(false);
         }
 
-        // ── Driving ───────────────────────────────────────────────────────
         private void HandleDriving()
         {
             ReadInput();
@@ -265,12 +266,10 @@ namespace StarterAssets
             transform.position += transform.forward * (_currentSpeed * Time.deltaTime);
         }
 
-        // ── Input ─────────────────────────────────────────────────────────
         private void ReadInput()
         {
             if (UseMobileInput)
             {
-                // Mobile: read public fields written by MobileVehicleUI every frame
                 _driveInput = MobileDriveInput;
                 _turnInput = MobileTurnInput;
             }
@@ -291,7 +290,6 @@ namespace StarterAssets
             }
         }
 
-        // ── Gizmo ─────────────────────────────────────────────────────────
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = new Color(0f, 1f, 0.5f, 0.25f);
