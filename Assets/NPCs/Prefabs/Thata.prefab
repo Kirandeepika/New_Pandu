@@ -1785,6 +1785,7 @@ GameObject:
   - component: {fileID: 1854050249725596227}
   - component: {fileID: 7677121267448143465}
   - component: {fileID: 6153254177215122615}
+  - component: {fileID: 5154563556999405796}
   m_Layer: 0
   m_Name: mThata 1
   m_TagString: Untagged
@@ -2435,6 +2436,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7402317788162861710, guid: 05348fe955e60684388137a85079c376, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6153254177215122615}
+    - targetCorrespondingSourceObject: {fileID: 7402317788162861710, guid: 05348fe955e60684388137a85079c376, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5154563556999405796}
   m_SourcePrefab: {fileID: 100100000, guid: 05348fe955e60684388137a85079c376, type: 3}
 --- !u!114 &6153254177215122615
 MonoBehaviour:
@@ -2448,11 +2452,35 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf636af7bdba44c49ac1105970e46510, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NPCPatrol
-  pointA: {fileID: 8586310427165198984}
-  pointB: {fileID: 4102780936490349146}
+  points: []
   minSpeed: 1.2
   maxSpeed: 2
   minWaitTime: 1
   maxWaitTime: 3
   player: {fileID: 1854050249725596227}
   activeDistance: 40
+--- !u!143 &5154563556999405796
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7107062556476195396}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.1
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 1, z: 0}
